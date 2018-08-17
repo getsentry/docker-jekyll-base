@@ -74,9 +74,13 @@ ONBUILD RUN bundle install
 
 ONBUILD COPY . /usr/src/app
 
-ONBUILD RUN set -x \
+ONBUILD ARG BUILDER_LIGHT_BUILD=0
+ONBUILD ENV BUILDER_LIGHT_BUILD=$BUILDER_LIGHT_BUILD
+
+ONBUILD RUN set -ex \
     && ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js \
     && bundle exec jekyll build \
+    && [ $BUILDER_LIGHT_BUILD = '0' ] \
     && find _site \
         -type f \
         -name '*.html' -o \
@@ -85,4 +89,5 @@ ONBUILD RUN set -x \
         -name '*.svg' -o \
         -name '*.js.map' -o \
         -name '*.json' \
-    | xargs -P $(nproc) -I '{}' zopfli -i9 '{}'
+    | xargs -P $(nproc) -I '{}' zopfli -i9 '{}' \
+    || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1'

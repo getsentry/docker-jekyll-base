@@ -14,7 +14,6 @@ for variant in builder runtime; do
     .
   docker push $repo:$variant-latest
   docker push $repo:$variant-$version
-  docker push $repo:$variant-$rev
 done
 
 cat <<EOF
