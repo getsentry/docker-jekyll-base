@@ -91,5 +91,5 @@ ONBUILD RUN set -ex \
         -name '*.svg' -o \
         -name '*.js.map' -o \
         -name '*.json' \
-    | xargs -P $(nproc) -I '{}' zopfli -i9 '{}' \
+    | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}" \
     || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1'
