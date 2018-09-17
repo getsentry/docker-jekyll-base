@@ -7,11 +7,13 @@ rev=$(git rev-parse --short HEAD)
 
 for variant in builder runtime; do
   docker build --pull --rm \
+    -t $repo:$variant \
     -t $repo:$variant-latest \
     -t $repo:$variant-$version \
     -t $repo:$variant-$rev \
     -f $variant.dockerfile \
     .
+  docker push $repo:$variant
   docker push $repo:$variant-latest
   docker push $repo:$variant-$version
 done
