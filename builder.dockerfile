@@ -84,7 +84,7 @@ ONBUILD RUN set -ex \
     && ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js \
     || echo '!! No webpack found, skipping.' \
     && bundle exec jekyll build $JEKYLL_BUILD_ARGS \
-    && [ $BUILDER_LIGHT_BUILD = '0' ] \
+    && ( [ $BUILDER_LIGHT_BUILD = '0' ] \
     && find _site \
         -type f \
         -name '*.html' -o \
@@ -95,4 +95,4 @@ ONBUILD RUN set -ex \
         -name '*.json' -o \
         -name '*.xml' \
     | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}" \
-    || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1'
+    || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1' )
