@@ -74,8 +74,6 @@ ONBUILD RUN bundle install
 
 ONBUILD COPY . /usr/src/app
 
-ONBUILD ARG JEKYLL_BUILD_ARGS=
-ONBUILD ENV JEKYLL_BUILD_ARGS=$JEKYLL_BUILD_ARGS
 ONBUILD ARG BUILDER_LIGHT_BUILD=0
 ONBUILD ENV BUILDER_LIGHT_BUILD=$BUILDER_LIGHT_BUILD
 
@@ -83,8 +81,8 @@ ONBUILD RUN set -ex \
     && [ -x ./node_modules/.bin/webpack ] \
     && ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js \
     || echo '!! No webpack found, skipping.' \
-    && bundle exec jekyll build $JEKYLL_BUILD_ARGS \
-    && [ $BUILDER_LIGHT_BUILD = '0' ] \
+    && bundle exec jekyll build \
+    && ( [ $BUILDER_LIGHT_BUILD = '0' ] \
     && find _site \
         -type f \
         -name '*.html' -o \
@@ -95,4 +93,4 @@ ONBUILD RUN set -ex \
         -name '*.json' -o \
         -name '*.xml' \
     | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}" \
-    || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1'
+    || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1' )
