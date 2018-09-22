@@ -79,20 +79,27 @@ ONBUILD ENV JEKYLL_BUILD_ARGS=$JEKYLL_BUILD_ARGS
 ONBUILD ARG BUILDER_LIGHT_BUILD=0
 ONBUILD ENV BUILDER_LIGHT_BUILD=$BUILDER_LIGHT_BUILD
 
-ONBUILD RUN set -ex \
-    && [ -x ./node_modules/.bin/webpack ] \
-    && ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js \
-    || echo '!! No webpack found, skipping.' \
-    && bundle exec jekyll build $JEKYLL_BUILD_ARGS \
-    && ( [ $BUILDER_LIGHT_BUILD = '0' ] \
-    && find _site \
-        -type f \
-        -name '*.html' -o \
-        -name '*.js' -o \
-        -name '*.css' -o \
-        -name '*.svg' -o \
-        -name '*.js.map' -o \
-        -name '*.json' -o \
-        -name '*.xml' \
-    | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}" \
-    || echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1' )
+ONBUILD RUN set -ex && \
+    if [ -x ./node_modules/.bin/webpack ]; then \
+        ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js; \
+    else \
+        echo '!! No webpack found, skipping.'; \
+    fi
+
+ONBUILD RUN bundle exec jekyll build $JEKYLL_BUILD_ARGS
+
+ONBUILD RUN set -ex && \
+    if [ $BUILDER_LIGHT_BUILD = '0' ]; then \
+        find _site \
+            -type f \
+            -name '*.html' -o \
+            -name '*.js' -o \
+            -name '*.css' -o \
+            -name '*.svg' -o \
+            -name '*.js.map' -o \
+            -name '*.json' -o \
+            -name '*.xml' \
+        | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}"; \
+    else \
+        echo 'Skipping compression because of BUILDER_LIGHT_BUILD=1'; \
+    fi
