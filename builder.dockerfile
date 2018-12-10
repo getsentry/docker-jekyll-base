@@ -3,6 +3,10 @@ FROM ruby:2.5
 ENV LANG=C.UTF-8 \
     JEKYLL_ENV=production
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      jq \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN set -ex \
     && export NODE_VERSION=8.11.3 \
     && export GNUPGHOME="$(mktemp -d)" \
@@ -74,29 +78,62 @@ ONBUILD RUN bundle install
 
 ONBUILD COPY . /usr/src/app
 
+ONBUILD ARG COMMIT_SHA=
+ONBUILD ENV COMMIT_SHA=$COMMIT_SHA
+ONBUILD ARG BRANCH_NAME=
+ONBUILD ENV BRANCH_NAME="$BRANCH_NAME"
+ONBUILD ARG BUILD_CONF={}
+ONBUILD ENV BUILD_CONF="$BUILD_CONF"
+
+ONBUILD RUN set -e && \
+  if [ -d .build-hooks/pre/ ]; then \
+    for f in .build-hooks/pre/*; do \
+      if [ -x "$f" ]; then \
+        echo "$0: running $f"; \
+        "$f"; \
+      else \
+        echo "$0: sourcing $f"; \
+          . "$f"; \
+      fi \
+    done \
+  fi
+
 ONBUILD RUN set -ex && \
-    if [ -x ./node_modules/.bin/webpack ]; then \
-        ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js; \
-    else \
-        echo '!! No webpack found, skipping.'; \
-    fi
+  if [ -x ./node_modules/.bin/webpack ]; then \
+    ./node_modules/.bin/webpack --config ./config/webpack.config.prod.js; \
+  else \
+    echo '!! No webpack found, skipping.'; \
+  fi
 
 ONBUILD ARG JEKYLL_BUILD_ARGS=
 ONBUILD RUN bundle exec jekyll build $JEKYLL_BUILD_ARGS
 
 ONBUILD ARG BUILDER_LIGHT_BUILD=0
 ONBUILD RUN set -ex && \
-    if [ $BUILDER_LIGHT_BUILD = '0' ]; then \
-        find _site \
-            -type f \
-            -name '*.html' -o \
-            -name '*.js' -o \
-            -name '*.css' -o \
-            -name '*.svg' -o \
-            -name '*.js.map' -o \
-            -name '*.json' -o \
-            -name '*.xml' \
-        | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}"; \
-    else \
-        echo "Skipping compression because of BUILDER_LIGHT_BUILD=$BUILDER_LIGHT_BUILD"; \
-    fi
+  if [ $BUILDER_LIGHT_BUILD = '0' ]; then \
+    find _site \
+      -type f \
+      -name '*.html' -o \
+      -name '*.js' -o \
+      -name '*.css' -o \
+      -name '*.svg' -o \
+      -name '*.js.map' -o \
+      -name '*.json' -o \
+      -name '*.xml' \
+    | xargs -P $(nproc) -I '{}' bash -c "echo 'Compressing {}...' && zopfli -i9 {}"; \
+  else \
+    echo "Skipping compression because of BUILDER_LIGHT_BUILD=$BUILDER_LIGHT_BUILD"; \
+  fi
+
+ONBUILD RUN set -e && \
+  if [ -d .build-hooks/post/ ]; then \
+    for f in .build-hooks/post/*; do \
+      if [ -x "$f" ]; then \
+        echo "$0: running $f"; \
+        "$f"; \
+      else \
+        echo "$0: sourcing $f"; \
+          . "$f"; \
+      fi \
+    done \
+  fi
