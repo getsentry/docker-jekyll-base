@@ -17,6 +17,7 @@ for variant in builder runtime; do
 done
 
 cat <<EOF
-FROM $repo:builder-$version AS builder
-FROM $repo:runtime-$version AS runtime
+ARG VERSION=$version
+FROM getsentry/jekyll-base:builder-\${VERSION} AS builder
+FROM getsentry/jekyll-base:runtime-\${VERSION} AS runtime
 EOF
