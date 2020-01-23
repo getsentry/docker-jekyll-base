@@ -1,6 +1,7 @@
 FROM nginx:1.16-alpine
 
 ADD nginx.conf /etc/nginx/nginx.conf
+ADD mime.types /etc/nginx/mime.types
 RUN nginx -t
 
 ONBUILD COPY --from=0 /usr/src/app/_site/ /usr/share/nginx/html/
